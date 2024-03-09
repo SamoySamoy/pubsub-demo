@@ -1,7 +1,7 @@
 import amqplib from "amqplib";
 const amqp_url = "amqp://localhost:5672";
 
-const postVideo = async (msg) => {
+const postVideo = async () => {
     try {
         // connection
         const conn = await amqplib.connect(amqp_url);
@@ -11,11 +11,17 @@ const postVideo = async (msg) => {
 
         // create exchange
         const exchangeName = "video";
-        await channel.assertExchange(exchangeName, "fanout", {
+        await channel.assertExchange(exchangeName, "topic", {
             durable: false,
         });
+
+        const args = process.argv.slice(2);
+        const msg = args[1] || "Fixed message";
+        const topic = args[0];
+
+        console.log(`msg::${msg}::::topic::${topic}`);
         // publish message
-        await channel.publish(exchangeName, "", Buffer.from(msg));
+        await channel.publish(exchangeName, topic, Buffer.from(msg));
 
         console.log(`[x] Send Ok:::${msg}`);
 
@@ -28,5 +34,4 @@ const postVideo = async (msg) => {
     }
 };
 
-const msg = process.argv.slice(2).join(" ") || "Hello";
-postVideo(msg);
+postVideo();

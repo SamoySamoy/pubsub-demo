@@ -11,7 +11,7 @@ const receiveVideo = async () => {
 
         // create exchange
         const exchangeName = "video";
-        await channel.assertExchange(exchangeName, "fanout", {
+        await channel.assertExchange(exchangeName, "topic", {
             durable: false,
         });
 
@@ -19,16 +19,26 @@ const receiveVideo = async () => {
         const { queue } = await channel.assertQueue("", {
             exclusive: true,
         });
-        console.log(`queueName::: ${queue}`);
+        const args = process.argv.slice(2);
+        if (!args.length) {
+            process.exit(0);
+        }
+        console.log(`waiting queue::${queue}::::topic::${args}`);
 
         // binding
-        await channel.bindQueue(queue, exchangeName, "");
+        args.forEach(async (key) => {
+            await channel.bindQueue(queue, exchangeName, key);
+        });
 
         // consume
         await channel.consume(
             queue,
             (msg) => {
-                console.log(`msg::`, msg.content.toString());
+                console.log(
+                    `Routing key::${
+                        msg.fields.routingKey
+                    }::::msg::${msg.content.toString()}`
+                );
             },
             { noAck: true }
         );
@@ -37,5 +47,4 @@ const receiveVideo = async () => {
     }
 };
 
-const msg = process.argv.slice(2).join(" ") || "Hello";
 receiveVideo();
